@@ -4,7 +4,8 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
-const encrypt = require("mongoose-encryption");
+const md5 = require("md5");// moduł do szyfrowania klucza
+
 
 const app = express();
 
@@ -25,12 +26,6 @@ const userSchema = new mongoose.Schema ({
   password: String
 });
 
-//const secret = "Thisisourlittlesecret";//To jest tak jakby klucz
-userSchema.plugin(encrypt, {//To też jest wymagane do enkrypcji
-  secret: process.env.SECRET,//Odniesienie do klucza, który jest w pliku .env
-  encryptedFields: ["password"] //To pole pozwala wybrać, jakie pola w naszym schema chcemy zaszyfrować
-});
-
 const User = new mongoose.model("User", userSchema);
 
 app.get("/", function(req, res) {
@@ -48,7 +43,7 @@ app.get("/register", function(req, res) {
 app.post("/register", function(req, res) {
   const newUser = new User({
     email: req.body.username,
-    password: req.body.password
+    password: md5(req.body.password)//To jest odpowiedzialne za szyfrowanie hasła
   });
 
   newUser.save(function(err) {
@@ -62,7 +57,7 @@ app.post("/register", function(req, res) {
 
 app.post("/login", function(req, res){
   const username = req.body.username;
-  const password= req.body.password;
+  const password = md5(req.body.password);//z razji, iż zahashowane hasło zawsze będzie takie samo, to można ze sobą je porównać
 
   User.findOne({email: username}, function(err, foundUser){
     if(err){

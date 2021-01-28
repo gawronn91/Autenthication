@@ -41,7 +41,8 @@ mongoose.set('useCreateIndex', true);
 const userSchema = new mongoose.Schema ({
   email: String,
   password: String,
-  googleId: String// To jest do tego, żeby sprawdzić, czy ktoś z takim google id
+  googleId: String,
+  facebookId: String// To jest do tego, żeby sprawdzić, czy ktoś z takim google id
   //juz sie zarejestrował w naszej bazie i nie będzie tworzyć nowych userów za kazdym
   //razem, jak się zarejestrujemy przez google. Odniesienie do tego w tej funkcji
   //findOrCreate

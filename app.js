@@ -9,6 +9,8 @@ const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const findOrCreate = require('mongoose-findorcreate');
+const FacebookStrategy = require('passport-facebook').Strategy;
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Nie jestem pewien, czy to na bank tak, jak na górze
 
 const app = express();
 
@@ -69,7 +71,7 @@ passport.deserializeUser(function(id, done){
   });
 });
 
-//To zostało wklejone, czyli może nie działać
+//Konfiguracja loginu googla
 passport.use(new GoogleStrategy({
     clientID: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
@@ -89,6 +91,22 @@ passport.use(new GoogleStrategy({
   }
 ));
 
+//Konfiguracja loginu facebooka
+passport.use(new FacebookStrategy({
+    clientID: process.env.FACEBOOK_APP_ID,
+    clientSecret: process.env.FACEBOOK_APP_SECRET,
+    callbackURL: "http://localhost:3000/auth/facebook/secrets",
+  },
+  function(accessToken, refreshToken, profile, cb) {
+    console.log(profile);
+    User.findOrCreate({ facebookId: profile.id }, function (err, user) {
+      return cb(err, user);
+    });
+  }
+));
+
+
+
 app.get("/", function(req, res) {
   res.render("home");
 });
@@ -103,6 +121,18 @@ app.get("/auth/google",
 //jesteśmy zalogowani
 app.get("/auth/google/secrets",
 passport.authenticate('google', {failureRedirect: '/login'}),
+function(req, res){
+  //Succesful authentication, redirect to secrets page
+  res.redirect("/secrets");
+});
+
+//To jest get request do okna logowania facebooka, które wyskoczy
+app.get("/auth/facebook",
+  passport.authenticate('facebook')
+);
+
+app.get("/auth/facebook/secrets",
+passport.authenticate('facebook', {failureRedirect: '/login'}),
 function(req, res){
   //Succesful authentication, redirect to secrets page
   res.redirect("/secrets");
@@ -193,3 +223,31 @@ app.listen(3000, function() {
 //      fjs.parentNode.insertBefore(js, fjs);
 //    }(document, 'script', 'facebook-jssdk'));
 // </script>
+
+// Taken from the sample code above, here's some of the code that's run during page load to check a person's login status:
+// FB.getLoginStatus(function(response) {
+//     statusChangeCallback(response);
+// });
+
+// The response object that's provided to your callback contains a number of fields:
+// {
+//     status: 'connected',
+//     authResponse: {
+//         accessToken: '...',
+//         expiresIn:'...',
+//         signedRequest:'...',
+//         userID:'...'
+//     }
+//   }
+
+// The onlogin attribute on the button to set up a JavaScript callback that checks the login status to see if the person logged in successfully:
+// <fb:login-button
+//   scope="public_profile,email"
+//   onlogin="checkLoginState();">
+// </fb:login-button>
+// This is the callback. It calls FB.getLoginStatus() to get the most recent login state. (statusChangeCallback() is a function that's part of the example that processes the response.)
+// function checkLoginState() {
+//   FB.getLoginStatus(function(response) {
+//     statusChangeCallback(response);
+//   });
+// }
